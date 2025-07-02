@@ -17,9 +17,6 @@ This project implements an AI-powered system that automatically analyzes system 
 
 ## User Personas & Use Cases
 
-
-## User Personas & Use Cases
-
 ### Primary Users
 
 **Tier-1 Support Analyst**
@@ -41,7 +38,6 @@ This project implements an AI-powered system that automatically analyzes system 
 - **Needs**: System reliability insights, log quality improvement, incident pattern analysis
 - **Benefits**: Log quality scoring, trend analysis, preventive recommendations, team performance metrics
 - **Workflow**: Reviews monthly patterns → Identifies improvement areas → Tunes system settings → Drives process changes# Intelligent Log Analysis & Incident Response System
-
 ## Architecture Overview
 
 ```
