@@ -137,12 +137,129 @@ index=application_logs OR index=system_logs
 - **Response Generation**: LangChain manages prompt templates for consistent outputs
 - **Rate Management**: Optimised for Gemini 2.0 Flash (Free: 15 RPM, Paid Tier 1: 2,000 RPM, Tier 2: 10,000 RPM)
 
-### Phase 3: Dashboard Integration
+### Phase 3: Dashboard Integration & Feedback Loop
 - Real-time incident classification
 - Automated root cause analysis
 - Suggested remediation steps
 - Expert contact information
 - Historical pattern analysis
+- **Interactive Feedback System**: User validation with CoT persistence
+
+#### Technical Implementation of Feedback System
+
+**Dashboard Panel Structure**:
+```xml
+<panel>
+  <title>AI Analysis Results</title>
+  <html>
+    <div id="ai-analysis-$incident_id$">
+      <h3>Root Cause Analysis</h3>
+      <p>$ai_analysis$</p>
+      
+      <h4>Chain of Thought</h4>
+      <div class="cot-reasoning">$chain_of_thought$</div>
+      
+      <div class="feedback-buttons">
+        <button class="btn-correct" onclick="submitFeedback('$incident_id$', 'correct')">
+          ✓ Correct Analysis
+        </button>
+        <button class="btn-incorrect" onclick="submitFeedback('$incident_id$', 'incorrect')">
+          ✗ Incorrect Analysis
+        </button>
+      </div>
+    </div>
+  </html>
+</panel>
+```
+
+**JavaScript Implementation**:
+```javascript
+function submitFeedback(incidentId, feedbackType) {
+    // Gather feedback data
+    const feedbackData = {
+        incident_id: incidentId,
+        feedback_type: feedbackType,
+        user: Splunk.util.getUsername(),
+        timestamp: new Date().toISOString(),
+        ai_analysis: document.querySelector(`#ai-analysis-${incidentId} p`).textContent,
+        chain_of_thought: document.querySelector(`#ai-analysis-${incidentId} .cot-reasoning`).textContent,
+        original_logs: getOriginalLogs(incidentId)
+    };
+    
+    // Send to Splunk REST API
+    fetch('/servicesNS/nobody/scooby_app/storage/collections/data/ai_feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Splunk ' + Splunk.util.getToken()
+        },
+        body: JSON.stringify(feedbackData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Update UI to show feedback was recorded
+        showFeedbackConfirmation(incidentId, feedbackType);
+        
+        // If correct, save to knowledge base index
+        if (feedbackType === 'correct') {
+            indexSuccessfulCoT(feedbackData);
+        }
+    });
+}
+```
+
+**Splunk Index Structure for Feedback**:
+```
+# Index: ai_feedback
+{
+    "incident_id": "INC-2025-001",
+    "feedback_type": "correct",
+    "user": "support.analyst",
+    "timestamp": "2025-01-15T10:30:45.000Z",
+    "ai_analysis": "Root cause identified as database connection pool exhaustion...",
+    "chain_of_thought": "1. Analysed error patterns... 2. Identified correlation with... 3. Concluded that...",
+    "original_logs": [...],
+    "resolution_outcome": "successful",
+    "resolution_time_minutes": 12
+}
+```
+
+**Knowledge Base Integration**:
+```python
+# Python service component
+def save_validated_cot(feedback_data):
+    """Save validated Chain of Thought to knowledge base"""
+    if feedback_data['feedback_type'] == 'correct':
+        knowledge_entry = {
+            'log_pattern': extract_log_pattern(feedback_data['original_logs']),
+            'successful_analysis': feedback_data['ai_analysis'],
+            'reasoning_chain': feedback_data['chain_of_thought'],
+            'validation_count': 1,
+            'last_validated': feedback_data['timestamp'],
+            'success_rate': 1.0
+        }
+        
+        # Index in Splunk knowledge base
+        splunk_client.index('ai_knowledge_base').submit(json.dumps(knowledge_entry))
+        
+        # Update RAG embeddings for future queries
+        update_rag_embeddings(knowledge_entry)
+```
+
+**Dashboard Query for Feedback Analytics**:
+```spl
+index=ai_feedback 
+| stats count by feedback_type, user, date_trunc=1d 
+| eval success_rate = round(correct/(correct+incorrect)*100, 2)
+| table _time, user, success_rate, total_feedback
+```
+
+**Benefits of This Approach**:
+- **Seamless Integration**: Buttons appear directly in existing Splunk dashboards
+- **Automatic Learning**: Correct CoT reasoning is immediately saved for future reference
+- **Audit Trail**: Complete tracking of user feedback and validation history
+- **Continuous Improvement**: System learns from validated successful analyses
+- **User Engagement**: Simple one-click feedback encourages participation
 
 ### Gemini 2.0 Flash Tier Comparison
 
@@ -252,6 +369,27 @@ index=application_logs OR index=system_logs
 - **Speed Optimised**: Gemini 2.0 Flash designed for low-latency responses ideal for incident response
 - **Cost Effective**: Best price-to-performance ratio for high-volume log analysis
 - **Multimodal Ready**: Can analyse log screenshots, dashboards, and charts alongside text logs
+
+### 4. Integration as First-Class Features
+**Challenge**: Poor integration with existing workflows will limit adoption.
+
+**Integration Strategy**:
+- **Splunk-Focused Integration**: Leverage existing Splunk infrastructure and team expertise
+  - Utilise existing Splunk knowledge base and documentation repositories
+  - Build on current support team familiarity with Splunk interfaces
+  - Integrate with established Splunk dashboards and visualisation workflows
+  - Maintain consistency with existing security and access control frameworks
+- **Enhanced Splunk Capabilities**: 
+  - AI-powered insights displayed within familiar Splunk dashboard environment
+  - Results stored in Splunk indexes for consistent data governance
+  - Search and reporting capabilities for AI analysis history
+  - Integration with existing Splunk alerting and notification systems
+- **Feedback Loop Implementation**:
+  - Interactive "Correct" and "Incorrect" buttons within Splunk dashboard panels
+  - Chain-of-Thought (CoT) reasoning automatically saved when users validate responses
+  - Feedback data indexed in dedicated Splunk index for continuous learning
+  - User attribution and timestamp tracking for audit and improvement purposes
+- **API-First Design**: All features accessible via REST APIs for future integrations as requirements evolve
 
 ## Advanced Capabilities & Opportunities
 
@@ -372,86 +510,222 @@ index=application_logs OR index=system_logs
 
 ## Future Roadmap
 
-### Short Term (3-6 months)
+### MVP Phase (3-6 months)
+**Core Splunk Integration:**
 - Implement core SPL queries for top 5 critical services
 - Deploy basic Python parsing and Gemini integration
 - Create initial dashboard with manual validation workflow
 - Establish feedback loop for model improvement
 
-### Medium Term (6-12 months)
-- Expand coverage to all monitored services
-- Implement automated root cause analysis
+**Universal API Development:**
+- **Log Analysis API**: Allow any application to submit logs for AI-powered analysis
+- **Document Management API**: Pre-save application documentation by app_id
+- **Simple Caching System**: Hash-based response caching (app_id + error_hash + document_hash)
+- **Authentication & Rate Limiting**: Secure API access with per-application quotas
+
+### Post-MVP Enhancements (6-12 months)
+- Expand Splunk coverage to all monitored services
+- Implement automated root cause analysis improvements
 - Add predictive failure detection capabilities
-- Integrate with existing ticketing systems (JIRA, ServiceNow)
+- **Enhanced Vector-Based Caching**: Semantic similarity search with embeddings (v1.5 feature)
+- **Advanced Analytics Dashboard**: API usage metrics and caching effectiveness
 
 ### Long Term (12+ months)
 - Multi-cloud log source integration
 - Advanced ML models for pattern prediction
 - Automated remediation execution (with approval workflows)
 - Integration with CI/CD pipelines for proactive issue prevention
+- **Hybrid Caching Architecture**: Combined hash-based and vector similarity caching
 
-### Advanced Capabilities
-- **Predictive Analytics**: Identify potential failures before they occur
-- **Automated Remediation**: Execute approved fixes automatically
-- **Cross-Service Correlation**: Identify cascading failure patterns
-- **Performance Optimisation**: Suggest infrastructure improvements based on failure patterns
+## MVP API Architecture & Extended Capabilities
 
-## Risks & Mitigations
+The MVP will include both Splunk integration and universal API capabilities to maximise platform value from day one.
 
-| Risk | Impact | Probability | Mitigation Strategy |
-|------|--------|-------------|-------------------|
-| **AI Overreliance** | High | Medium | Human-in-the-loop workflows, mandatory validation for P0/P1 incidents, fallback procedures |
-| **Inconsistent Logging** | High | High | Log quality scoring system, developer training programmes, standardised logging libraries |
-| **P0/P1 Latency** | Critical | Low | Fast-path triage with minimal AI processing, rule-based immediate escalation |
-| **AI Hallucinations** | Medium | Medium | Confidence scoring, reasoning chains, evidence linking to source logs |
-| **API Rate Limits** | Medium | Medium | Tiered processing, intelligent batching, upgrade path to higher tiers |
-| **Model Accuracy Drift** | Medium | Medium | Continuous monitoring, A/B testing, regular model validation, feedback loops |
-| **Integration Failures** | High | Low | Circuit breakers, fallback to manual processes, comprehensive monitoring |
-| **Security Vulnerabilities** | High | Low | Leverage existing Splunk security, API key rotation, audit logging |
-| **Cost Overrun** | Medium | Medium | Usage monitoring, cost alerts, tier optimisation, batch processing efficiency |
-| **User Adoption Resistance** | Medium | Medium | Gradual rollout, training programmes, success story sharing, user feedback integration |
+### Universal Log Analysis API
+**Objective**: Allow any application to submit logs and receive AI-powered analysis and resolution guidance alongside core Splunk functionality.
 
-### Risk Monitoring Framework
-- **Weekly**: API usage and cost tracking
-- **Monthly**: Accuracy metrics and user satisfaction surveys  
-- **Quarterly**: Security reviews and model performance assessments
-- **Incident-based**: Immediate review of any AI recommendation failures
+**Core API Endpoints**:
+```python
+# Submit logs for analysis
+POST /api/v1/analyse-logs
+{
+    "app_id": "my-application",
+    "logs": ["ERROR: Database connection failed", "FATAL: OutOfMemoryException"],
+    "context": {
+        "environment": "production",
+        "version": "1.2.3",
+        "timestamp": "2025-01-15T10:30:45Z"
+    },
+    "supporting_docs": ["runbook.md", "troubleshooting.pdf"]  # Optional
+}
 
-## Salient Points & Success Factors
+# Response
+{
+    "analysis_id": "ana_123456",
+    "root_cause": "Database connection pool exhaustion",
+    "confidence": 0.87,
+    "resolution_steps": [...],
+    "similar_incidents": [...],
+    "estimated_resolution_time": "15 minutes"
+}
+```
 
-### Technical Considerations
-- **Data Privacy**: Ensure log data handling complies with security policies
-- **Performance**: Monitor AI processing times to maintain real-time capabilities
-- **Accuracy Monitoring**: Implement feedback mechanisms to track and improve AI recommendations
-- **Fallback Procedures**: Maintain manual processes for system failures
+### Document Management API
+**Pre-save Application Documentation**:
+```python
+# Register application documentation
+POST /api/v1/apps/{app_id}/documents
+{
+    "document_type": "runbook",
+    "title": "Database Connection Issues",
+    "content": "...",
+    "tags": ["database", "connection", "troubleshooting"],
+    "version": "1.0"
+}
 
-### Organisational Alignment
-- **Stakeholder Buy-in**: Ensure support from both IT operations and development teams
-- **Change Management**: Plan for gradual rollout with training and support
-- **Success Metrics**: Establish clear KPIs and regular review cycles
-- **Continuous Improvement**: Create processes for incorporating user feedback
+# List registered documents
+GET /api/v1/apps/{app_id}/documents
 
-## Getting Started
+# Update document
+PUT /api/v1/apps/{app_id}/documents/{doc_id}
+```
 
-1. **Environment Setup**: Configure Python environment with PyTorch, LangChain, and Splunk SDK
-2. **SPL Development**: Create and test log extraction queries
-3. **AI Integration**: Set up Gemini API access and initial prompt templates
-4. **Dashboard Creation**: Build basic Splunk dashboard for results visualisation
-5. **Pilot Testing**: Deploy with limited scope for validation
-6. **Iterative Improvement**: Gather feedback and refine system performance
+**Benefits**:
+- **Reduced API Payload**: Avoid submitting large documents with each request
+- **Version Control**: Track document changes and effectiveness over time
+- **Centralised Knowledge**: Build comprehensive knowledge base per application
+- **Access Control**: Secure document storage with app-level permissions
 
-## Success Measurement
+### Simple Response Caching (MVP Implementation)
 
-**Primary KPIs**:
-- **Mean Time to Resolution (MTTR)**: Target 50% reduction from current baseline
-- **First-Line Ticket Volume**: Target 40-60% reduction through self-service resolution
-- **Incident Classification Accuracy**: Target >90% correct severity and category assignment
-- **Self-Service Resolution Rate**: Target 70% of P2+ incidents resolved without escalation
+#### Hash-Based Caching
+```python
+# Cache key generation
+cache_key = f"{app_id}:{error_hash}:{document_hash}"
 
-**Secondary Metrics**:
-- **User Satisfaction**: Survey support teams and end users quarterly
-- **System Accuracy**: Track correctness of AI recommendations with feedback loops
-- **Adoption Rate**: Monitor usage of AI-generated insights and recommendation acceptance
-- **Cost per Incident**: Measure total cost reduction including labour and downtime
+# Example implementation
+def get_cache_key(app_id, logs, docs):
+    error_signature = extract_error_signature(logs)
+    doc_hash = hash_documents(docs)
+    return f"{app_id}:{hash(error_signature)}:{doc_hash}"
 
-This system represents a significant step toward intelligent operations, transforming reactive incident response into proactive, data-driven problem resolution.
+# Cache lookup before AI inference
+cached_response = redis.get(cache_key)
+if cached_response:
+    return json.loads(cached_response)
+else:
+    ai_response = call_gemini_analysis(logs, docs)
+    redis.setex(cache_key, 3600, json.dumps(ai_response))  # 1 hour TTL
+    return ai_response
+```
+
+### Technical Architecture for MVP APIs
+
+#### API Gateway & Rate Limiting
+```python
+# Flask/FastAPI implementation
+@app.route('/api/v1/analyse-logs', methods=['POST'])
+@rate_limit("100 per hour")  # Per app_id
+@authenticate_app_id
+def analyse_logs():
+    data = request.json
+    app_id = data['app_id']
+    
+    # Cache lookup first
+    cache_key = generate_cache_key(app_id, data['logs'], data.get('supporting_docs', []))
+    cached_result = cache.get(cache_key)
+    
+    if cached_result:
+        return jsonify({**cached_result, "cached": True})
+    
+    # Get pre-registered documents
+    app_docs = get_app_documents(app_id)
+    
+    # Combine with submitted docs
+    all_docs = app_docs + data.get('supporting_docs', [])
+    
+    # AI analysis
+    result = analyse_with_gemini(data['logs'], all_docs)
+    
+    # Cache result
+    cache.setex(cache_key, 3600, json.dumps(result))
+    
+    return jsonify({**result, "cached": False})
+```
+
+#### Document Storage Integration
+```python
+# Splunk-based document storage
+class DocumentManager:
+    def store_document(self, app_id, doc_data):
+        doc_entry = {
+            "app_id": app_id,
+            "document_id": generate_id(),
+            "title": doc_data['title'],
+            "content": doc_data['content'],
+            "document_type": doc_data['type'],
+            "tags": doc_data.get('tags', []),
+            "version": doc_data.get('version', '1.0'),
+            "created_at": datetime.utcnow().isoformat(),
+            "content_hash": hashlib.sha256(doc_data['content'].encode()).hexdigest()
+        }
+        
+        # Store in Splunk index
+        self.splunk_client.index('app_documents').submit(json.dumps(doc_entry))
+        
+        return doc_entry['document_id']
+    
+    def get_app_documents(self, app_id):
+        search_query = f'index=app_documents app_id="{app_id}" | table title, content, tags, version'
+        return self.splunk_client.jobs.oneshot(search_query)
+```
+
+### MVP Performance & Scaling Considerations
+
+**Caching Strategy Benefits**:
+- **Cost Reduction**: Avoid duplicate AI inference calls for similar errors
+- **Latency Improvement**: Instant responses for cached queries
+- **Learning Acceleration**: Build knowledge base of successful resolutions
+- **Resource Optimisation**: Reduce Gemini API usage and costs
+
+**MVP Technical Stack**:
+- **API Framework**: FastAPI for async performance
+- **Document Storage**: Splunk indexes + file storage (S3/Azure Blob)
+- **Cache Layer**: Redis for hash-based caching
+- **Authentication**: JWT tokens with app_id validation
+- **Rate Limiting**: Redis-based sliding window rate limiter
+
+## Post-MVP: Vector-Based Semantic Caching
+
+### Enhanced Caching with Semantic Similarity (v1.5)
+```python
+# Enhanced caching with semantic similarity
+def semantic_cache_lookup(app_id, logs, docs):
+    # Generate embedding for current error
+    error_embedding = generate_embedding(extract_error_context(logs))
+    
+    # Search vector database for similar errors
+    similar_errors = vector_db.search(
+        vector=error_embedding,
+        filter={"app_id": app_id},
+        threshold=0.85  # Similarity threshold
+    )
+    
+    if similar_errors:
+        # Return cached response for most similar error
+        return get_cached_response(similar_errors[0]['cache_key'])
+    
+    # No similar error found, generate new response
+    ai_response = call_gemini_analysis(logs, docs)
+    
+    # Store in vector DB and cache
+    cache_key = store_vector_cache(app_id, error_embedding, ai_response)
+    return ai_response
+
+# Vector database schema
+{
+    "id": "vec_123456",
+    "app_id": "my-application",
+    "error_embedding": [0.1, 0.2, ...],  # 768-dimensional vector
+    "error_signature": "Database connection failed",
+    "document_context": ["runbook_v1.0", "troubleshooting_v2.1
