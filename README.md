@@ -15,12 +15,6 @@ This project implements an AI-powered system that automatically analyses system 
 - Enable self-service incident resolution for common issues
 - Create a knowledge base that evolves with each incident
 
-**Key Success Metrics:**
-- Reduce first-line support ticket volume by 40-60%
-- Decrease average incident resolution time by 50%
-- Improve accuracy of initial incident classification to >90%
-- Enable 70% of common incidents to be resolved without escalation
-
 ## User Personas & Use Cases
 
 ### Primary Users
@@ -74,7 +68,7 @@ This project implements an AI-powered system that automatically analyses system 
 
 ### Core Components
 
-1. **SPL Query Engine**: Custom Splunk queries to identify and extract failure patterns
+1. **Splunk**: Custom Splunk queries to identify and extract failure patterns
    - Automated log filtering and classification
    - Multi-service failure correlation
    - Real-time and historical pattern detection
