@@ -326,16 +326,6 @@ index=application_logs OR index=system_logs
 | **Azure OpenAI** | Enterprise focus increases complexity, higher costs, less suitable for rapid prototyping |
 | **Local LLM (Llama, etc.)** | Significant infrastructure investment, model management overhead, limited reasoning capabilities |
 
-#### Option 4: Alternative Programming Languages
-**Considerations**:
-
-| Language | Trade-offs |
-|----------|------------|
-| **Go** | Better performance, but limited AI/ML library ecosystem |
-| **Java** | Enterprise-grade, but slower development for AI prototyping |
-| **Node.js** | Fast development, but less mature AI/ML tooling |
-| **Rust** | Excellent performance, but steep learning curve for team |
-
 ### Why This Stack: Splunk + Python + Gemini 2.0 Flash
 
 #### Splunk Integration Benefits
