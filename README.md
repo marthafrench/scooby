@@ -3,17 +3,23 @@ An AI-powered incident response system that analyses Splunk logs with Gemini 2.0
 
 ## Overview
 
-This project implements an AI-powered system that automatically analyzes system failure logs from Splunk, provides intelligent insights about incidents, and presents actionable information through automated dashboards. The system combines log aggregation, machine learning analysis, and intelligent prompt management to transform raw failure data into comprehensive incident response guidance.
+This project implements an AI-powered system that automatically analyses system failure logs from Splunk, provides intelligent insights about incidents, and presents actionable information through automated dashboards. The system combines log aggregation, machine learning analysis, and intelligent prompt management to transform raw failure data into comprehensive incident response guidance.
 
 ## What We Want to Achieve
 
 **Primary Objectives:**
-- Automatically detect and categorize system failures across multiple services
+- Automatically detect and categorise system failures across multiple services
 - Provide instant, intelligent analysis of incidents including root cause identification
 - Generate actionable remediation steps and escalation paths
 - Reduce mean time to resolution (MTTR) for incidents
 - Enable self-service incident resolution for common issues
 - Create a knowledge base that evolves with each incident
+
+**Key Success Metrics:**
+- Reduce first-line support ticket volume by 40-60%
+- Decrease average incident resolution time by 50%
+- Improve accuracy of initial incident classification to >90%
+- Enable 70% of common incidents to be resolved without escalation
 
 ## User Personas & Use Cases
 
@@ -37,7 +43,8 @@ This project implements an AI-powered system that automatically analyzes system 
 **SRE Lead**
 - **Needs**: System reliability insights, log quality improvement, incident pattern analysis
 - **Benefits**: Log quality scoring, trend analysis, preventive recommendations, team performance metrics
-- **Workflow**: Reviews monthly patterns → Identifies improvement areas → Tunes system settings → Drives process changes# Intelligent Log Analysis & Incident Response System
+- **Workflow**: Reviews monthly patterns → Identifies improvement areas → Tunes system settings → Drives process changes
+
 ## Architecture Overview
 
 ```
@@ -73,9 +80,9 @@ This project implements an AI-powered system that automatically analyzes system 
    - Real-time and historical pattern detection
 
 2. **Python Log Parser**: Processes extracted logs and prepares data for AI analysis
-   - Log normalization and standardization
+   - Log normalisation and standardisation
    - Metadata enrichment and tagging
-   - Batch processing optimization
+   - Batch processing optimisation
 
 3. **PyTorch + Gemini 2.0 Flash Integration**: Analyses patterns and generates insights
    - Parallel processing of multiple log entries
@@ -88,7 +95,7 @@ This project implements an AI-powered system that automatically analyzes system 
    - Response consistency and quality control
 
 5. **Splunk Dashboard**: Presents insights to support teams
-   - Real-time incident visualization
+   - Real-time incident visualisation
    - Historical trend analysis
    - Interactive drill-down capabilities
 
@@ -96,6 +103,23 @@ This project implements an AI-powered system that automatically analyzes system 
    - Automated documentation lookup
    - Expert identification and routing
    - Continuous knowledge base updates
+
+## Business Benefits
+
+### Quantified Impact Targets
+- **40-60% reduction** in first-line support ticket volume through automated resolution guidance
+- **50% improvement** in average incident resolution time via immediate root cause identification
+- **>90% accuracy** in initial incident classification and severity assessment
+- **70% self-service resolution rate** for common incidents without escalation
+
+### Operational Excellence
+**Cost Reduction**: Lower support costs through reduced tier-1 expansion needs and minimised business downtime. Training efficiency improved as new team members resolve incidents with AI guidance.
+
+**Resource Optimisation**: Support staff focus on complex issues rather than routine troubleshooting. Developer teams receive contextualised alerts reducing investigation time.
+
+**Knowledge Management**: Institutional knowledge capture through AI learning from each incident. Consistent response quality with standardised analysis reducing human error. Continuous improvement as system evolves with organisational knowledge.
+
+**Scalability**: System handles increasing log volumes without linear resource growth, providing uniform analysis quality regardless of support staff experience level.
 
 ## Technical Implementation
 
@@ -113,11 +137,20 @@ index=application_logs OR index=system_logs
 
 ### Phase 2: AI Analysis Pipeline
 - **Input Processing**: Structured log data from Splunk
-- **Parallel Processing**: Multiple log entries analyzed concurrently via Gemini 2.0 Flash API
+- **Parallel Processing**: Multiple log entries analysed concurrently via Gemini 2.0 Flash API
 - **Pattern Recognition**: PyTorch models identify failure signatures
 - **Context Enhancement**: Gemini 2.0 Flash provides fast, detailed analysis with intelligent batch processing
 - **Response Generation**: LangChain manages prompt templates for consistent outputs
-- ### Gemini 2.0 Flash Tier Comparison
+- **Rate Management**: Optimised for Gemini 2.0 Flash (Free: 15 RPM, Paid Tier 1: 2,000 RPM, Tier 2: 10,000 RPM)
+
+### Phase 3: Dashboard Integration
+- Real-time incident classification
+- Automated root cause analysis
+- Suggested remediation steps
+- Expert contact information
+- Historical pattern analysis
+
+### Gemini 2.0 Flash Tier Comparison
 
 | Tier | RPM Limit | TPM Limit | Cost | Best For |
 |------|-----------|-----------|------|----------|
@@ -130,31 +163,7 @@ index=application_logs OR index=system_logs
 - **Free Tier**: Handles ~**20** small incidents/day
 - **Tier 1**: Supports ~**50-100** concurrent incidents  
 - **Tier 2**: **Enterprise-grade** incident response at scale
-- **Tier 3**: **Multi-organization** or very high-volume environments
-
-### Phase 3: Dashboard Integration
-- Real-time incident classification
-- Automated root cause analysis
-- Suggested remediation steps
-- Expert contact information
-- Historical pattern analysis
-
-## Business Benefits
-
-### Quantified Impact Targets
-- **40-60% reduction** in first-line support ticket volume through automated resolution guidance
-- **50% improvement** in average incident resolution time via immediate root cause identification
-- **>90% accuracy** in initial incident classification and severity assessment
-- **70% self-service resolution rate** for common incidents without escalation
-
-### Operational Excellence
-**Cost Reduction**: Lower support costs through reduced tier-1 expansion needs and minimized business downtime. Training efficiency improved as new team members resolve incidents with AI guidance.
-
-**Resource Optimization**: Support staff focus on complex issues rather than routine troubleshooting. Developer teams receive contextualized alerts reducing investigation time.
-
-**Knowledge Management**: Institutional knowledge capture through AI learning from each incident. Consistent response quality with standardized analysis reducing human error. Continuous improvement as system evolves with organizational knowledge.
-
-**Scalability**: System handles increasing log volumes without linear resource growth, providing uniform analysis quality regardless of support staff experience level.
+- **Tier 3**: **Multi-organisation** or very high-volume environments
 
 ## Pros and Cons
 
@@ -163,149 +172,16 @@ index=application_logs OR index=system_logs
 - **Consistency**: Provides uniform analysis quality regardless of support staff experience
 - **Learning Capability**: Improves over time with more data and feedback
 - **Integration**: Leverages existing Splunk infrastructure
-- **Cost-Effective**: Utilizes cloud-based AI services without significant infrastructure investment
+- **Cost-Effective**: Utilises cloud-based AI services without significant infrastructure investment
 
 ### Challenges
 - **Initial Setup Complexity**: Requires careful tuning of SPL queries and AI prompts
 - **Data Quality Dependency**: Effectiveness limited by log quality and consistency
 - **AI Model Accuracy**: May require ongoing training and refinement
 - **Change Management**: Teams need to adapt to new workflows and trust AI recommendations
-- **Maintenance Overhead**: Requires ongoing monitoring and prompt optimization
+- **Maintenance Overhead**: Requires ongoing monitoring and prompt optimisation
 
-## Technology Stack Decisions
-
-### MVP Implementation Strategy
-**Decision**: Build MVP in Python, with technology stack reevaluation post-MVP.
-
-**Rationale**: 
-- Python offers rapid prototyping capabilities for AI/ML integrations
-- Extensive library ecosystem (PyTorch, LangChain, Splunk SDK)
-- Team familiarity and quick time-to-value
-- Post-MVP evaluation will consider performance requirements and scale needs
-
-### Architecture Alternatives Considered
-
-#### Option 1: Native Splunk AI Implementation
-**Why Discounted**:
-- **Resource Burden**: Additional CPU and memory load on existing Splunk infrastructure
-- **Cost Impact**: Splunk licensing costs scale with compute usage - AI processing would significantly increase operational expenses
-- **Limited AI Capabilities**: Splunk's native AI features don't match Gemini 2.0 Flash's advanced reasoning and natural language capabilities
-- **Vendor Lock-in**: Reduces flexibility for future AI model upgrades or vendor changes
-- **Performance Constraints**: Splunk optimized for search/indexing, not intensive AI workloads
-
-#### Option 2: Custom UI + Separate Database
-**Why Discounted**:
-- **Security Overhead**: Requires building entire authentication, authorization, and audit infrastructure from scratch
-- **Licensing Efficiency**: Support teams already have Splunk access - no additional license provisioning needed
-- **Development Complexity**: Significant frontend development effort diverts resources from core AI functionality
-- **User Adoption**: Support teams already familiar with Splunk interface - reduces training overhead
-- **Maintenance Burden**: Additional infrastructure to monitor, backup, and maintain
-
-#### Option 3: Alternative Cloud AI Services
-**Comparison Analysis**:
-
-| Provider | Discounted Because |
-|----------|-------------------|
-| **OpenAI GPT-4** | Higher latency, more expensive for high-volume processing, less granular rate limiting |
-| **AWS Bedrock** | More complex setup, requires additional AWS infrastructure, limited customization |
-| **Azure OpenAI** | Enterprise focus increases complexity, higher costs, less suitable for rapid prototyping |
-| **Local LLM (Llama, etc.)** | Significant infrastructure investment, model management overhead, limited reasoning capabilities |
-
-#### Option 4: Alternative Programming Languages
-**Considerations**:
-
-| Language | Trade-offs |
-|----------|------------|
-| **Go** | Better performance, but limited AI/ML library ecosystem |
-| **Java** | Enterprise-grade, but slower development for AI prototyping |
-| **Node.js** | Fast development, but less mature AI/ML tooling |
-| **Rust** | Excellent performance, but steep learning curve for team |
-
-### Why This Stack: Splunk + Python + Gemini 2.0 Flash
-
-#### Splunk Integration Benefits
-- **Existing Infrastructure**: Leverage current log aggregation and storage investment
-- **User Familiarity**: Support teams already trained on Splunk interfaces
-- **Data Quality**: Logs already normalized and indexed for efficient querying
-- **Security**: Inherits existing access controls, audit trails, and compliance frameworks
-- **Scalability**: Proven ability to handle enterprise-scale log volumes
-
-#### Python Advantages for MVP
-- **AI/ML Ecosystem**: Native integration with PyTorch, LangChain, transformers libraries
-- **Rapid Development**: Quick iteration cycles for prompt engineering and model integration
-- **Team Skills**: Existing Python expertise within organization
-- **Splunk SDK**: Mature, well-documented Python SDK for Splunk integration
-- **Community Support**: Large community for troubleshooting AI integration challenges
-
-#### Gemini 2.0 Flash Selection
-- **Performance**: Low-latency responses critical for incident response scenarios
-- **Cost Efficiency**: Best price-to-performance ratio for high-volume log processing
-- **Reasoning Capability**: Superior logical reasoning for root cause analysis
-- **Multimodal Ready**: Future capability to process screenshots and visual incident data
-- **Rate Limits**: Generous limits support enterprise-scale incident volumes
-- **API Maturity**: Stable, well-documented API with robust error handling
-
-### Strategic Technology Goals
-
-#### Skill Development Initiative
-**Objective**: Build organizational capability in AI application development.
-
-**Benefits**:
-- **Future-Proofing**: Embed AI skills across development teams for future projects
-- **Knowledge Transfer**: Create internal expertise rather than external consulting dependency
-- **Innovation Culture**: Encourage experimentation with AI-powered solutions
-- **Competitive Advantage**: Develop proprietary AI integration capabilities
-- **Career Development**: Upskill team members in high-demand AI/ML technologies
-
-#### Technology Evolution Path
-**Post-MVP Considerations**:
-- **Performance Optimization**: Evaluate Go/Rust for high-throughput components
-- **Microservices Architecture**: Split into specialized services for better scalability
-- **Container Orchestration**: Kubernetes deployment for enterprise reliability
-- **Multi-Model Support**: Framework to easily swap or ensemble different AI models
-- **Edge Processing**: Consider local processing for latency-critical scenarios
-
-## Future Roadmap
-
-### Short Term (3-6 months)
-- Implement core SPL queries for top 5 critical services
-- Deploy basic Python parsing and Gemini integration
-- Create initial dashboard with manual validation workflow
-- Establish feedback loop for model improvement
-
-### Medium Term (6-12 months)
-- Expand coverage to all monitored services
-- Implement automated root cause analysis
-- Add predictive failure detection capabilities
-- Integrate with existing ticketing systems (JIRA, ServiceNow)
-
-### Long Term (12+ months)
-- Multi-cloud log source integration
-- Advanced ML models for pattern prediction
-- Automated remediation execution (with approval workflows)
-- Integration with CI/CD pipelines for proactive issue prevention
-
-### Advanced Capabilities
-- **Predictive Analytics**: Identify potential failures before they occur
-- **Automated Remediation**: Execute approved fixes automatically
-- **Cross-Service Correlation**: Identify cascading failure patterns
-- **Performance Optimization**: Suggest infrastructure improvements based on failure patterns
-
-## Salient Points & Success Factors
-
-### Technical Considerations
-- **Data Privacy**: Ensure log data handling complies with security policies
-- **Performance**: Monitor AI processing times to maintain real-time capabilities
-- **Accuracy Monitoring**: Implement feedback mechanisms to track and improve AI recommendations
-- **Fallback Procedures**: Maintain manual processes for system failures
-
-### Organizational Alignment
-- **Stakeholder Buy-in**: Ensure support from both IT operations and development teams
-- **Change Management**: Plan for gradual rollout with training and support
-- **Success Metrics**: Establish clear KPIs and regular review cycles
-- **Continuous Improvement**: Create processes for incorporating user feedback
-
-### Critical Areas to Watch & Improve
+## Critical Areas to Watch & Improve
 
 ### 1. AI Model Risk Management
 **Challenge**: LLM reliability in high-stakes incident response requires robust safety measures.
@@ -327,13 +203,13 @@ index=application_logs OR index=system_logs
 - **Log Quality Scoring**: Implement automated scoring based on:
   - Structured vs unstructured content ratio
   - Presence of key fields (timestamp, severity, service, error codes)
-  - Message consistency and standardization
-- **Developer Partnership Program**: 
+  - Message consistency and standardisation
+- **Developer Partnership Programme**: 
   - Quarterly log quality reviews with dev teams
-  - Standardized logging libraries and templates
+  - Standardised logging libraries and templates
   - Log quality dashboards for team leads
 - **Progressive Enhancement**: Start with highest-quality log sources, expand gradually
-- **Log Enrichment Pipeline**: Automated tagging and standardization where possible
+- **Log Enrichment Pipeline**: Automated tagging and standardisation where possible
 
 ### 3. Dual-Mode Processing Architecture
 **Challenge**: AI analysis may introduce unacceptable delays in critical incident response.
@@ -379,7 +255,7 @@ index=application_logs OR index=system_logs
 - **Free Tier**: Process up to 15 log entries per minute (1M tokens/minute)
 - **Paid Tier 1**: Process up to 2,000 log entries per minute with 4M tokens/minute  
 - **Paid Tier 2**: Scale to 10,000 requests per minute with 10M tokens/minute for enterprise incidents
-- **Speed Optimized**: Gemini 2.0 Flash designed for low-latency responses ideal for incident response
+- **Speed Optimised**: Gemini 2.0 Flash designed for low-latency responses ideal for incident response
 - **Cost Effective**: Best price-to-performance ratio for high-volume log analysis
 - **Multimodal Ready**: Can analyse log screenshots, dashboards, and charts alongside text logs
 
@@ -407,7 +283,7 @@ index=application_logs OR index=system_logs
 - Expert resolution notes and post-mortems
 - Service dependency maps and topology data
 
-**Benefits**: More accurate, context-aware recommendations based on organizational knowledge
+**Benefits**: More accurate, context-aware recommendations based on organisational knowledge
 
 ### Incident Similarity Engine
 **Functionality**:
@@ -432,20 +308,139 @@ index=application_logs OR index=system_logs
 - Resource allocation recommendations
 - Trend analysis and prevention opportunities
 
+## Technology Stack Decisions
+
+### MVP Implementation Strategy
+**Decision**: Build MVP in Python, with technology stack reevaluation post-MVP.
+
+**Rationale**: 
+- Python offers rapid prototyping capabilities for AI/ML integrations
+- Extensive library ecosystem (PyTorch, LangChain, Splunk SDK)
+- Team familiarity and quick time-to-value
+- Post-MVP evaluation will consider performance requirements and scale needs
+
+### Architecture Alternatives Considered
+
+#### Option 1: Native Splunk AI Implementation
+**Why Discounted**:
+- **Resource Burden**: Additional CPU and memory load on existing Splunk infrastructure
+- **Cost Impact**: Splunk licensing costs scale with compute usage - AI processing would significantly increase operational expenses
+- **Limited AI Capabilities**: Splunk's native AI features don't match Gemini 2.0 Flash's advanced reasoning and natural language capabilities
+- **Vendor Lock-in**: Reduces flexibility for future AI model upgrades or vendor changes
+- **Performance Constraints**: Splunk optimised for search/indexing, not intensive AI workloads
+
+#### Option 2: Custom UI + Separate Database
+**Why Discounted**:
+- **Security Overhead**: Requires building entire authentication, authorisation, and audit infrastructure from scratch
+- **Licensing Efficiency**: Support teams already have Splunk access - no additional licence provisioning needed
+- **Development Complexity**: Significant frontend development effort diverts resources from core AI functionality
+- **User Adoption**: Support teams already familiar with Splunk interface - reduces training overhead
+- **Maintenance Burden**: Additional infrastructure to monitor, backup, and maintain
+
+#### Option 3: Alternative Cloud AI Services
+**Comparison Analysis**:
+
+| Provider | Discounted Because |
+|----------|-------------------|
+| **OpenAI GPT-4** | Higher latency, more expensive for high-volume processing, less granular rate limiting |
+| **AWS Bedrock** | More complex setup, requires additional AWS infrastructure, limited customisation |
+| **Azure OpenAI** | Enterprise focus increases complexity, higher costs, less suitable for rapid prototyping |
+| **Local LLM (Llama, etc.)** | Significant infrastructure investment, model management overhead, limited reasoning capabilities |
+
+#### Option 4: Alternative Programming Languages
+**Considerations**:
+
+| Language | Trade-offs |
+|----------|------------|
+| **Go** | Better performance, but limited AI/ML library ecosystem |
+| **Java** | Enterprise-grade, but slower development for AI prototyping |
+| **Node.js** | Fast development, but less mature AI/ML tooling |
+| **Rust** | Excellent performance, but steep learning curve for team |
+
+### Why This Stack: Splunk + Python + Gemini 2.0 Flash
+
+#### Splunk Integration Benefits
+- **Existing Infrastructure**: Leverage current log aggregation and storage investment
+- **User Familiarity**: Support teams already trained on Splunk interfaces
+- **Data Quality**: Logs already normalised and indexed for efficient querying
+- **Security**: Inherits existing access controls, audit trails, and compliance frameworks
+- **Scalability**: Proven ability to handle enterprise-scale log volumes
+
+#### Python Advantages for MVP
+- **AI/ML Ecosystem**: Native integration with PyTorch, LangChain, transformers libraries
+- **Rapid Development**: Quick iteration cycles for prompt engineering and model integration
+- **Team Skills**: Existing Python expertise within organisation
+- **Splunk SDK**: Mature, well-documented Python SDK for Splunk integration
+- **Community Support**: Large community for troubleshooting AI integration challenges
+
+#### Gemini 2.0 Flash Selection
+- **Performance**: Low-latency responses critical for incident response scenarios
+- **Cost Efficiency**: Best price-to-performance ratio for high-volume log processing
+- **Reasoning Capability**: Superior logical reasoning for root cause analysis
+- **Multimodal Ready**: Future capability to process screenshots and visual incident data
+- **Rate Limits**: Generous limits support enterprise-scale incident volumes
+- **API Maturity**: Stable, well-documented API with robust error handling
+
+### Strategic Technology Goals
+
+#### Skill Development Initiative
+**Objective**: Build organisational capability in AI application development.
+
+**Benefits**:
+- **Future-Proofing**: Embed AI skills across development teams for future projects
+- **Knowledge Transfer**: Create internal expertise rather than external consulting dependency
+- **Innovation Culture**: Encourage experimentation with AI-powered solutions
+- **Competitive Advantage**: Develop proprietary AI integration capabilities
+- **Career Development**: Upskill team members in high-demand AI/ML technologies
+
+#### Technology Evolution Path
+**Post-MVP Considerations**:
+- **Performance Optimisation**: Evaluate Go/Rust for high-throughput components
+- **Microservices Architecture**: Split into specialised services for better scalability
+- **Container Orchestration**: Kubernetes deployment for enterprise reliability
+- **Multi-Model Support**: Framework to easily swap or ensemble different AI models
+- **Edge Processing**: Consider local processing for latency-critical scenarios
+
+## Future Roadmap
+
+### Short Term (3-6 months)
+- Implement core SPL queries for top 5 critical services
+- Deploy basic Python parsing and Gemini integration
+- Create initial dashboard with manual validation workflow
+- Establish feedback loop for model improvement
+
+### Medium Term (6-12 months)
+- Expand coverage to all monitored services
+- Implement automated root cause analysis
+- Add predictive failure detection capabilities
+- Integrate with existing ticketing systems (JIRA, ServiceNow)
+
+### Long Term (12+ months)
+- Multi-cloud log source integration
+- Advanced ML models for pattern prediction
+- Automated remediation execution (with approval workflows)
+- Integration with CI/CD pipelines for proactive issue prevention
+
+### Advanced Capabilities
+- **Predictive Analytics**: Identify potential failures before they occur
+- **Automated Remediation**: Execute approved fixes automatically
+- **Cross-Service Correlation**: Identify cascading failure patterns
+- **Performance Optimisation**: Suggest infrastructure improvements based on failure patterns
+
 ## Risks & Mitigations
 
 | Risk | Impact | Probability | Mitigation Strategy |
 |------|--------|-------------|-------------------|
 | **AI Overreliance** | High | Medium | Human-in-the-loop workflows, mandatory validation for P0/P1 incidents, fallback procedures |
-| **Inconsistent Logging** | High | High | Log quality scoring system, developer training programs, standardized logging libraries |
+| **Inconsistent Logging** | High | High | Log quality scoring system, developer training programmes, standardised logging libraries |
 | **P0/P1 Latency** | Critical | Low | Fast-path triage with minimal AI processing, rule-based immediate escalation |
 | **AI Hallucinations** | Medium | Medium | Confidence scoring, reasoning chains, evidence linking to source logs |
 | **API Rate Limits** | Medium | Medium | Tiered processing, intelligent batching, upgrade path to higher tiers |
 | **Model Accuracy Drift** | Medium | Medium | Continuous monitoring, A/B testing, regular model validation, feedback loops |
 | **Integration Failures** | High | Low | Circuit breakers, fallback to manual processes, comprehensive monitoring |
 | **Security Vulnerabilities** | High | Low | Leverage existing Splunk security, API key rotation, audit logging |
-| **Cost Overrun** | Medium | Medium | Usage monitoring, cost alerts, tier optimization, batch processing efficiency |
-| **User Adoption Resistance** | Medium | Medium | Gradual rollout, training programs, success story sharing, user feedback integration |
+| **Cost Overrun** | Medium | Medium | Usage monitoring, cost alerts, tier optimisation, batch processing efficiency |
+| **User Adoption Resistance** | Medium | Medium | Gradual rollout, training programmes, success story sharing, user feedback integration |
 
 ### Risk Monitoring Framework
 - **Weekly**: API usage and cost tracking
@@ -453,12 +448,26 @@ index=application_logs OR index=system_logs
 - **Quarterly**: Security reviews and model performance assessments
 - **Incident-based**: Immediate review of any AI recommendation failures
 
+## Salient Points & Success Factors
+
+### Technical Considerations
+- **Data Privacy**: Ensure log data handling complies with security policies
+- **Performance**: Monitor AI processing times to maintain real-time capabilities
+- **Accuracy Monitoring**: Implement feedback mechanisms to track and improve AI recommendations
+- **Fallback Procedures**: Maintain manual processes for system failures
+
+### Organisational Alignment
+- **Stakeholder Buy-in**: Ensure support from both IT operations and development teams
+- **Change Management**: Plan for gradual rollout with training and support
+- **Success Metrics**: Establish clear KPIs and regular review cycles
+- **Continuous Improvement**: Create processes for incorporating user feedback
+
 ## Getting Started
 
 1. **Environment Setup**: Configure Python environment with PyTorch, LangChain, and Splunk SDK
 2. **SPL Development**: Create and test log extraction queries
 3. **AI Integration**: Set up Gemini API access and initial prompt templates
-4. **Dashboard Creation**: Build basic Splunk dashboard for results visualization
+4. **Dashboard Creation**: Build basic Splunk dashboard for results visualisation
 5. **Pilot Testing**: Deploy with limited scope for validation
 6. **Iterative Improvement**: Gather feedback and refine system performance
 
@@ -474,6 +483,6 @@ index=application_logs OR index=system_logs
 - **User Satisfaction**: Survey support teams and end users quarterly
 - **System Accuracy**: Track correctness of AI recommendations with feedback loops
 - **Adoption Rate**: Monitor usage of AI-generated insights and recommendation acceptance
-- **Cost per Incident**: Measure total cost reduction including labor and downtime
+- **Cost per Incident**: Measure total cost reduction including labour and downtime
 
 This system represents a significant step toward intelligent operations, transforming reactive incident response into proactive, data-driven problem resolution.
