@@ -19,7 +19,7 @@ This project implements an AI-powered system that automatically analyses system 
 
 ### Primary Users
 
-**Tier-1 Support Analyst**
+**First Line Support**
 - **Needs**: Quick incident understanding, clear resolution steps, escalation guidance
 - **Benefits**: AI-powered dashboard provides immediate context, suggested fixes, and confidence scoring
 - **Workflow**: Receives alert → Reviews AI analysis → Follows guided resolution → Escalates if needed
@@ -107,7 +107,7 @@ This project implements an AI-powered system that automatically analyses system 
 - **70% self-service resolution rate** for common incidents without escalation
 
 ### Operational Excellence
-**Cost Reduction**: Lower support costs through reduced tier-1 expansion needs and minimised business downtime. Training efficiency improved as new team members resolve incidents with AI guidance.
+**Cost Reduction**: Lower support costs through reduced first line expansion needs and minimised business downtime. Training efficiency improved as new team members resolve incidents with AI guidance.
 
 **Resource Optimisation**: Support staff focus on complex issues rather than routine troubleshooting. Developer teams receive contextualised alerts reducing investigation time.
 
