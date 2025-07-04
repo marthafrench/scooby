@@ -1,15 +1,15 @@
 # scooby
-An AI-powered incident response system that analyses Splunk logs with Gemini 2.0 Flash via PyTorch to provide intelligent root cause analysis and automated resolution guidance
+An AI-powered incident response system that analyses logs along with available system documentation using Gemini 2.0 Flash via Cortex to provide intelligent automated resolution guidance
 
 ## Overview
 
-This project implements an AI-powered system that automatically analyses system failure logs from Splunk, provides intelligent insights about incidents, and presents actionable information through automated dashboards. The system combines log aggregation, machine learning analysis, and intelligent prompt management to transform raw failure data into comprehensive incident response guidance.
+This project implements an AI-powered system that automatically analyses system failure logs from Splunk or HTTP POSTS, provides intelligent insights about incidents, and presents actionable information through automated dashboards. The system combines log aggregation, machine learning analysis and intelligent prompt management to transform raw failure data and documentation into comprehensive incident response guidance.
 
 ## What We Want to Achieve
 
 **Primary Objectives:**
 - Automatically detect and categorise system failures across multiple services
-- Provide instant, intelligent analysis of incidents including root cause identification
+- Provide intelligent analysis of incidents in under 5 minutes
 - Generate actionable remediation steps and escalation paths
 - Reduce mean time to resolution (MTTR) for incidents
 - Enable self-service incident resolution for common issues
@@ -20,13 +20,13 @@ This project implements an AI-powered system that automatically analyses system 
 ### Primary Users
 
 **First Line Support**
-- **Needs**: Quick incident understanding, clear resolution steps, escalation guidance
-- **Benefits**: AI-powered dashboard provides immediate context, suggested fixes, and confidence scoring
+- **Needs**: Quick incident understanding, clear resolution steps and escalation guidance
+- **Benefits**: AI-powered dashboard provides immediate context, suggested fixes and confidence scoring
 - **Workflow**: Receives alert → Reviews AI analysis → Follows guided resolution → Escalates if needed
 
 **DevOps Engineer**  
-- **Needs**: Proactive issue detection, technical root cause analysis, remediation automation
-- **Benefits**: Early warnings about emerging patterns, detailed technical analysis, infrastructure-specific recommendations
+- **Needs**: Proactive issue detection and remediation automation
+- **Benefits**: Detailed technical analysis and infrastructure-specific recommendations
 - **Workflow**: Monitors trends → Receives AI alerts → Reviews suggested fixes → Implements preventive measures
 
 **Incident Manager**
@@ -39,7 +39,7 @@ This project implements an AI-powered system that automatically analyses system 
 - **Benefits**: Log quality scoring, trend analysis, preventive recommendations, team performance metrics
 - **Workflow**: Reviews monthly patterns → Identifies improvement areas → Tunes system settings → Drives process changes
 
-## Architecture Overview
+## Architecture Overview (MVP)
 
 ```
 ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
@@ -49,8 +49,8 @@ This project implements an AI-powered system that automatically analyses system 
                                                 │
                                                 ▼
 ┌─────────────┐                        ┌─────────────────┐
-│   LangChain │───────────────────────▶│   PyTorch +     │
-│ (Prompt Mgmt)│                       │   Gemini AI     │
+│   GEMINI    │───────────────────────▶│   Cortex +      │
+│             │                        │   API           │
 └─────────────┘                        └─────────────────┘
                                                 │
                                                 ▼
@@ -77,8 +77,9 @@ This project implements an AI-powered system that automatically analyses system 
    - Log normalisation and standardisation
    - Metadata enrichment and tagging
    - Batch processing optimisation
+   - Adding supporting documentation
 
-3. **PyTorch + Gemini 2.0 Flash Integration**: Analyses patterns and generates insights
+3. **Gemini 2.0 Flash Integration**: Analyses patterns and generates insights
    - Parallel processing of multiple log entries
    - Advanced reasoning and root cause analysis
    - Confidence scoring and explanation generation
@@ -101,10 +102,9 @@ This project implements an AI-powered system that automatically analyses system 
 ## Business Benefits
 
 ### Quantified Impact Targets
-- **40-60% reduction** in first-line support ticket volume through automated resolution guidance
-- **50% improvement** in average incident resolution time via immediate root cause identification
+- **40-60% reduction** in time to resolution support through automated resolution guidance
 - **>90% accuracy** in initial incident classification and severity assessment
-- **70% self-service resolution rate** for common incidents without escalation
+- **70% self-service resolution rate** for common incidents without escalation to second line support
 
 ### Operational Excellence
 **Cost Reduction**: Lower support costs through reduced first line expansion needs and minimised business downtime. Training efficiency improved as new team members resolve incidents with AI guidance.
@@ -123,13 +123,12 @@ Data Capture: When users click "Correct" or "Incorrect", JavaScript captures the
 
 Storage Strategy: Feedback gets indexed in Splunk using two dedicated indexes - one for all feedback data and another specifically for validated successful analyses that can serve as a knowledge base.
 
-Learning Loop: Correct analyses automatically become training examples. The system can reference these validated patterns for future similar incidents, and the reasoning chains get incorporated into RAG embeddings to improve future AI prompts.
+Learning Loop: Correct analysis can be referenced for future similar incidents.
 
-Analytics: Standard Splunk queries track success rates, user feedback patterns, and system accuracy over time, providing insights into where the AI performs well and where it needs improvement.
+Analytics: Standard Splunk queries track success rates, user feedback patterns and system accuracy over time, providing insights into where the AI performs well and where it needs improvement.
 
 **Benefits of This Approach**:
 - **Seamless Integration**: Buttons appear directly in existing Splunk dashboards
-- **Automatic Learning**: Correct CoT reasoning is immediately saved for future reference
 - **Audit Trail**: Complete tracking of user feedback and validation history
 - **Continuous Improvement**: System learns from validated successful analyses
 - **User Engagement**: Simple one-click feedback encourages participation
