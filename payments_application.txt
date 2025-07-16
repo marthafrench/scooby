@@ -1,0 +1,356 @@
+# PAYMENTS APPLICATION - SYSTEM DOCUMENTATION
+# Last Updated: 2025-01-15
+# Version: 3.2.1
+# Classification: Internal Use
+
+## APPLICATION OVERVIEW
+
+**Service Name**: payment-service
+**Application ID**: payments-app-prod
+**Environment**: Production
+**Primary Function**: Process customer payments, handle transactions, manage payment methods
+**Business Criticality**: CRITICAL (P0 service)
+**SLA Target**: 99.95% uptime, <2s response time
+**Owner Team**: Payments Engineering Team
+**On-Call Contact**: payments-oncall@company.com
+**Slack Channel**: #payments-engineering
+
+## ARCHITECTURE
+
+### High-Level Architecture
+```
+[Web Frontend] → [API Gateway] → [Payment Service] → [Payment Gateway]
+                                        ↓
+                                [Database Cluster] ← [Redis Cache]
+                                        ↓
+                                [Audit Service] → [Compliance DB]
+```
+
+### Core Components
+
+**Payment API Service**
+- Technology: Node.js 18.x with Express.js
+- Port: 8080 (HTTP), 8443 (HTTPS)
+- Load Balancer: AWS ALB
+- Auto-scaling: 3-20 instances based on CPU/memory
+- Instance Type: t3.large (2 vCPU, 8GB RAM)
+
+**Database**
+- Primary: PostgreSQL 14.x (AWS RDS)
+- Instance: db.r5.2xlarge (8 vCPU, 64GB RAM)
+- Multi-AZ: Yes
+- Read Replicas: 2 instances
+- Backup: Daily snapshots, 30-day retention
+
+**Cache Layer**
+- Technology: Redis 7.x (AWS ElastiCache)
+- Cluster: 3 nodes, replication enabled
+- Instance Type: cache.r6g.large
+- TTL: Payment tokens (15 min), User sessions (24 hours)
+
+**External Dependencies**
+- Stripe Payment Gateway (Primary)
+- PayPal Payment Gateway (Secondary)
+- Auth Service (Internal)
+- User Service (Internal)
+- Notification Service (Internal)
+- Fraud Detection Service (Internal)
+
+## KEY CONFIGURATION
+
+### Environment Variables
+```
+# Database
+DB_HOST=payments-prod-cluster.xyz.us-east-1.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=payments_prod
+DB_USER=payments_service
+DB_POOL_SIZE=20
+DB_TIMEOUT=30000
+
+# Redis
+REDIS_HOST=payments-cache-prod.xyz.cache.amazonaws.com
+REDIS_PORT=6379
+REDIS_TIMEOUT=5000
+
+# External APIs
+STRIPE_API_URL=https://api.stripe.com/v1
+STRIPE_TIMEOUT=15000
+PAYPAL_API_URL=https://api.paypal.com/v2
+PAYPAL_TIMEOUT=20000
+
+# Service Settings
+PORT=8080
+NODE_ENV=production
+LOG_LEVEL=info
+MAX_PAYMENT_AMOUNT=50000
+RATE_LIMIT_REQUESTS=1000
+RATE_LIMIT_WINDOW=900000
+```
+
+### Database Schema (Key Tables)
+- `payments` - Main payment records
+- `payment_methods` - Stored payment methods
+- `transactions` - Transaction history
+- `refunds` - Refund records
+- `payment_intents` - Payment authorization records
+- `audit_logs` - Compliance and audit trail
+
+## MONITORING & ALERTING
+
+### Key Metrics
+- Payment Success Rate: Target >99.5%
+- Average Response Time: Target <2s
+- Database Connection Pool Usage: Alert >80%
+- External Gateway Response Time: Alert >10s
+- Error Rate: Alert >1%
+- Queue Depth: Alert >100 pending payments
+
+### Critical Alerts
+1. **Payment Processing Failure Rate >5%**
+   - Severity: P1
+   - Escalation: Immediate
+   - Runbook: check_payment_gateways.md
+
+2. **Database Connection Pool Exhausted**
+   - Severity: P1
+   - Escalation: 5 minutes
+   - Runbook: database_connection_issues.md
+
+3. **External Payment Gateway Timeout**
+   - Severity: P2
+   - Escalation: 10 minutes
+   - Runbook: external_gateway_issues.md
+
+### Dashboards
+- Grafana: https://monitoring.company.com/payments-overview
+- New Relic: https://rpm.newrelic.com/accounts/12345/applications/payments-prod
+- AWS CloudWatch: https://console.aws.amazon.com/cloudwatch/
+
+## COMMON FAILURE MODES
+
+### 1. Database Connection Issues
+**Symptoms**: Connection timeout errors, high response times
+**Log Patterns**: "database connection timeout", "connection pool exhausted"
+**Typical Causes**:
+- Database CPU/memory exhaustion
+- Network connectivity issues
+- Connection pool misconfiguration
+- Long-running queries blocking connections
+
+**Immediate Actions**:
+1. Check database CPU/memory metrics in CloudWatch
+2. Verify network connectivity to RDS
+3. Check for long-running queries in pg_stat_activity
+4. Consider restarting application instances to clear stale connections
+
+### 2. Payment Gateway Timeouts
+**Symptoms**: Payment failures, gateway timeout errors
+**Log Patterns**: "gateway timeout", "external API unreachable", "stripe timeout"
+**Typical Causes**:
+- External payment provider issues
+- Network latency/packet loss
+- API rate limiting
+- Invalid API credentials
+
+**Immediate Actions**:
+1. Check Stripe/PayPal status pages
+2. Verify API credentials haven't expired
+3. Check network connectivity and latency
+4. Switch to backup payment gateway if available
+
+### 3. High Memory Usage / Memory Leaks
+**Symptoms**: Application crashes, slow response times, OOM errors
+**Log Patterns**: "out of memory", "heap space exceeded", "garbage collection"
+**Typical Causes**:
+- Memory leaks in payment processing logic
+- Large payment batch operations
+- Insufficient instance memory allocation
+- Memory-intensive operations not properly cleaned up
+
+**Immediate Actions**:
+1. Check memory metrics in CloudWatch/New Relic
+2. Restart affected instances
+3. Scale up instance size temporarily
+4. Review recent deployments for memory leaks
+
+### 4. Redis Cache Failures
+**Symptoms**: Increased database load, slower response times
+**Log Patterns**: "redis connection failed", "cache miss rate high", "redis timeout"
+**Typical Causes**:
+- Redis instance failure
+- Network connectivity issues
+- Cache eviction due to memory pressure
+- Redis configuration issues
+
+**Immediate Actions**:
+1. Check Redis instance health in AWS console
+2. Verify cache hit rates and memory usage
+3. Restart Redis cluster if needed
+4. Temporarily disable caching to reduce database impact
+
+## TROUBLESHOOTING PROCEDURES
+
+### Payment Processing Failures
+
+1. **Check Payment Gateway Status**
+   ```bash
+   curl -H "Authorization: Bearer $STRIPE_API_KEY" https://api.stripe.com/v1/charges/ch_test
+   curl -H "Authorization: Bearer $PAYPAL_TOKEN" https://api.paypal.com/v2/payments
+   ```
+
+2. **Verify Database Connectivity**
+   ```bash
+   kubectl exec -it payment-service-pod -- psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "SELECT 1;"
+   ```
+
+3. **Check Application Logs**
+   ```bash
+   kubectl logs -f deployment/payment-service --tail=100
+   # Look for: ERROR, timeout, connection, failed, exception
+   ```
+
+4. **Validate Configuration**
+   ```bash
+   kubectl get configmap payment-service-config -o yaml
+   kubectl get secret payment-service-secrets -o yaml
+   ```
+
+### Database Performance Issues
+
+1. **Check Active Connections**
+   ```sql
+   SELECT count(*) FROM pg_stat_activity WHERE datname = 'payments_prod';
+   SELECT * FROM pg_stat_activity WHERE state = 'active' AND query_start < now() - interval '1 minute';
+   ```
+
+2. **Identify Slow Queries**
+   ```sql
+   SELECT query, mean_time, calls FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;
+   ```
+
+3. **Check Lock Contention**
+   ```sql
+   SELECT * FROM pg_locks WHERE NOT granted;
+   ```
+
+## DEPLOYMENT INFORMATION
+
+### Deployment Pipeline
+- CI/CD: GitHub Actions
+- Container Registry: AWS ECR
+- Orchestration: Kubernetes (EKS)
+- Deployment Strategy: Rolling updates with canary
+- Rollback Time: <5 minutes
+
+### Infrastructure
+- **Kubernetes Namespace**: payments-prod
+- **Replicas**: Min 3, Max 20
+- **Resource Limits**:
+  - CPU: 1000m request, 2000m limit
+  - Memory: 2Gi request, 4Gi limit
+- **Health Checks**:
+  - Readiness: /health/ready
+  - Liveness: /health/live
+  - Startup: /health/startup
+
+### Recent Changes Log
+```
+2025-01-15: Updated Stripe API to v2023-10-16
+2025-01-12: Increased connection pool size from 15 to 20
+2025-01-10: Added PayPal as backup payment gateway
+2025-01-08: Implemented circuit breaker for external APIs
+2025-01-05: Updated Node.js from 16.x to 18.x
+```
+
+## SECURITY & COMPLIANCE
+
+### PCI DSS Compliance
+- Level: PCI DSS Level 1
+- Card data: Never stored, tokenized via Stripe
+- Encryption: TLS 1.3 for all external communications
+- Audit: Quarterly penetration testing
+
+### Access Controls
+- Service Account: payments-service-sa
+- IAM Role: PaymentsServiceRole
+- Database Access: Encrypted connections only
+- API Keys: Rotated monthly, stored in AWS Secrets Manager
+
+## ESCALATION PROCEDURES
+
+### Severity Levels
+
+**P0 (Critical - <5 min response)**
+- Complete payment processing outage
+- Data breach or security incident
+- Mass payment failures (>10% failure rate)
+- Contact: payments-oncall@company.com, CTO
+
+**P1 (High - <15 min response)**
+- Partial payment processing issues
+- Database connectivity problems
+- External gateway degradation
+- Contact: payments-oncall@company.com
+
+**P2 (Medium - <1 hour response)**
+- Performance degradation
+- Non-critical feature failures
+- Monitoring alerts
+- Contact: payments-team@company.com
+
+### Contact Information
+- **Primary On-Call**: +1-555-PAYMENTS
+- **Secondary On-Call**: +1-555-BACKUP
+- **Team Lead**: Sarah Johnson (sarah.j@company.com)
+- **Engineering Manager**: Mike Chen (mike.c@company.com)
+- **Director of Engineering**: Alex Rodriguez (alex.r@company.com)
+
+## DISASTER RECOVERY
+
+### RTO/RPO Targets
+- RTO (Recovery Time Objective): 15 minutes
+- RPO (Recovery Point Objective): 5 minutes
+
+### Backup Strategy
+- Database: Automated daily backups, point-in-time recovery
+- Configuration: Stored in Git, versioned
+- Secrets: AWS Secrets Manager with cross-region replication
+
+### Failover Procedures
+1. Switch traffic to secondary AWS region
+2. Promote read replica to primary database
+3. Update DNS records for payment gateway endpoints
+4. Verify all services are healthy in secondary region
+
+## APPENDIX
+
+### Useful Commands
+```bash
+# Check payment service status
+kubectl get pods -n payments-prod -l app=payment-service
+
+# Scale payment service
+kubectl scale deployment payment-service --replicas=10 -n payments-prod
+
+# Check recent deployments
+kubectl rollout history deployment/payment-service -n payments-prod
+
+# Emergency rollback
+kubectl rollout undo deployment/payment-service -n payments-prod
+
+# View application logs
+kubectl logs -f deployment/payment-service -n payments-prod
+
+# Check database connections
+kubectl exec -it payment-service-pod -- netstat -an | grep 5432
+```
+
+### Related Documentation
+- API Documentation: https://docs.company.com/payments-api
+- Runbooks: https://wiki.company.com/payments-runbooks
+- Architecture Diagrams: https://wiki.company.com/payments-architecture
+- Incident Postmortems: https://wiki.company.com/payments-incidents
+
+---
+END OF DOCUMENT

@@ -1,0 +1,477 @@
+# AUTH APPLICATION - SYSTEM DOCUMENTATION
+# Last Updated: 2025-01-15
+# Version: 2.8.3
+# Classification: Internal Use - Security Sensitive
+
+## APPLICATION OVERVIEW
+
+**Service Name**: auth-service
+**Application ID**: auth-app-prod
+**Environment**: Production
+**Primary Function**: User authentication, authorization, session management, JWT token issuance
+**Business Criticality**: CRITICAL (P0 service)
+**SLA Target**: 99.99% uptime, <500ms response time
+**Owner Team**: Identity & Access Management Team
+**On-Call Contact**: auth-oncall@company.com
+**Slack Channel**: #iam-engineering
+
+## ARCHITECTURE
+
+### High-Level Architecture
+```
+[Client Apps] → [API Gateway] → [Auth Service] → [User Database]
+                                      ↓              ↓
+                              [Session Store] → [LDAP/AD]
+                                      ↓              ↓
+                              [Audit Service] → [MFA Service]
+```
+
+### Core Components
+
+**Authentication API Service**
+- Technology: Java 17 with Spring Boot 3.x
+- Framework: Spring Security 6.x
+- Port: 8080 (HTTP), 8443 (HTTPS)
+- Load Balancer: NGINX with SSL termination
+- Auto-scaling: 5-30 instances based on request volume
+- Instance Type: t3.xlarge (4 vCPU, 16GB RAM)
+
+**Database**
+- Primary: PostgreSQL 15.x (AWS RDS)
+- Instance: db.r6g.2xlarge (8 vCPU, 64GB RAM)
+- Multi-AZ: Yes
+- Read Replicas: 3 instances (geographically distributed)
+- Backup: Continuous backup with PITR, 90-day retention
+
+**Session Store**
+- Technology: Redis 7.x Cluster (AWS ElastiCache)
+- Cluster: 6 nodes (3 primary, 3 replica)
+- Instance Type: cache.r6g.xlarge
+- TTL: Sessions (24 hours), JWT blacklist (7 days), Rate limiting (1 hour)
+
+**External Dependencies**
+- Active Directory/LDAP (Corporate SSO)
+- AWS Cognito (Social logins)
+- Twilio (SMS MFA)
+- SendGrid (Email verification)
+- AWS KMS (Key management)
+- Vault (Secret management)
+
+## KEY CONFIGURATION
+
+### Environment Variables
+```
+# Database
+DB_HOST=auth-prod-cluster.xyz.us-east-1.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=auth_prod
+DB_USER=auth_service
+DB_POOL_SIZE=25
+DB_TIMEOUT=10000
+DB_MAX_LIFETIME=1800000
+
+# Redis Session Store
+REDIS_CLUSTER_NODES=auth-session-001.xyz.cache.amazonaws.com:6379,auth-session-002.xyz.cache.amazonaws.com:6379,auth-session-003.xyz.cache.amazonaws.com:6379
+REDIS_TIMEOUT=3000
+REDIS_MAX_REDIRECTS=3
+
+# JWT Configuration
+JWT_SECRET_KEY_ID=auth-jwt-key-2025
+JWT_ISSUER=https://auth.company.com
+JWT_AUDIENCE=company-api
+JWT_ACCESS_TOKEN_TTL=3600
+JWT_REFRESH_TOKEN_TTL=2592000
+
+# LDAP/AD
+LDAP_URL=ldaps://corp-ad.company.com:636
+LDAP_BASE_DN=DC=company,DC=com
+LDAP_USER_DN=CN=auth-service,OU=ServiceAccounts,DC=company,DC=com
+LDAP_TIMEOUT=5000
+
+# MFA Settings
+MFA_REQUIRED_ROLES=admin,finance,hr
+TOTP_ISSUER=Company Auth
+SMS_PROVIDER=twilio
+EMAIL_PROVIDER=sendgrid
+
+# Security
+BCRYPT_ROUNDS=12
+SESSION_TIMEOUT=86400000
+MAX_LOGIN_ATTEMPTS=5
+LOCKOUT_DURATION=900000
+RATE_LIMIT_LOGIN=10
+RATE_LIMIT_WINDOW=300000
+```
+
+### Database Schema (Key Tables)
+- `users` - User accounts and profile information
+- `user_credentials` - Password hashes and metadata
+- `user_sessions` - Active user sessions
+- `user_roles` - Role assignments
+- `permissions` - System permissions
+- `oauth_clients` - OAuth client applications
+- `mfa_settings` - Multi-factor authentication settings
+- `login_attempts` - Failed login tracking
+- `audit_events` - Security audit log
+
+## MONITORING & ALERTING
+
+### Key Metrics
+- Authentication Success Rate: Target >99.8%
+- Average Response Time: Target <500ms
+- Session Creation Rate: Monitor spikes >1000/min
+- Failed Login Rate: Alert >5%
+- MFA Bypass Attempts: Alert >0
+- Token Validation Latency: Alert >100ms
+
+### Critical Alerts
+1. **Authentication Failure Rate >10%**
+   - Severity: P0
+   - Escalation: Immediate
+   - Runbook: auth_failure_investigation.md
+
+2. **LDAP/AD Connection Failure**
+   - Severity: P1
+   - Escalation: 5 minutes
+   - Runbook: ldap_connectivity_issues.md
+
+3. **JWT Key Rotation Failure**
+   - Severity: P1
+   - Escalation: 10 minutes
+   - Runbook: jwt_key_management.md
+
+4. **Unusual Login Patterns Detected**
+   - Severity: P2
+   - Escalation: 15 minutes
+   - Runbook: security_incident_response.md
+
+### Dashboards
+- Security Dashboard: https://security.company.com/auth-monitoring
+- Grafana: https://monitoring.company.com/auth-overview
+- Splunk: https://splunk.company.com/auth-security
+- AWS CloudWatch: https://console.aws.amazon.com/cloudwatch/
+
+## COMMON FAILURE MODES
+
+### 1. LDAP/Active Directory Connectivity Issues
+**Symptoms**: Corporate SSO failures, timeout errors during login
+**Log Patterns**: "LDAP timeout", "directory server unreachable", "bind operation failed"
+**Typical Causes**:
+- Network connectivity to AD controllers
+- AD server overload or maintenance
+- Certificate expiration
+- Service account lockout
+
+**Immediate Actions**:
+1. Check network connectivity to AD controllers
+2. Verify service account is not locked/expired
+3. Check AD server health and load
+4. Validate SSL certificates for LDAPS
+5. Switch to backup AD controllers if available
+
+### 2. JWT Token Validation Failures
+**Symptoms**: API calls returning 401 Unauthorized, token signature errors
+**Log Patterns**: "invalid JWT signature", "token expired", "malformed token"
+**Typical Causes**:
+- JWT signing key rotation issues
+- Clock drift between services
+- Token tampering attempts
+- KMS key access problems
+
+**Immediate Actions**:
+1. Verify JWT signing keys in KMS
+2. Check time synchronization across services
+3. Validate token generation and signing process
+4. Review recent key rotation activities
+5. Check for malicious token manipulation attempts
+
+### 3. Session Store (Redis) Failures
+**Symptoms**: Users forced to re-login frequently, session state lost
+**Log Patterns**: "redis connection timeout", "session not found", "cache cluster unreachable"
+**Typical Causes**:
+- Redis cluster node failures
+- Network partitioning
+- Memory pressure and evictions
+- Configuration changes
+
+**Immediate Actions**:
+1. Check Redis cluster health in AWS console
+2. Verify all cluster nodes are reachable
+3. Check memory usage and eviction rates
+4. Restart failed Redis nodes if necessary
+5. Temporarily increase session timeout to reduce impact
+
+### 4. Database Connection Pool Exhaustion
+**Symptoms**: Login timeouts, connection refused errors
+**Log Patterns**: "connection pool exhausted", "database timeout", "unable to obtain connection"
+**Typical Causes**:
+- High authentication volume
+- Long-running database transactions
+- Connection leaks in application code
+- Database performance issues
+
+**Immediate Actions**:
+1. Monitor database connection count and pool usage
+2. Identify and kill long-running transactions
+3. Scale up application instances to distribute load
+4. Increase connection pool size temporarily
+5. Check for application connection leaks
+
+### 5. Rate Limiting Activation
+**Symptoms**: Legitimate users unable to login, rate limit exceeded errors
+**Log Patterns**: "rate limit exceeded", "too many login attempts", "IP blocked"
+**Typical Causes**:
+- Brute force attacks
+- Misconfigured rate limiting rules
+- Load testing without coordination
+- Bot traffic
+
+**Immediate Actions**:
+1. Identify source IPs triggering rate limits
+2. Analyze login patterns for attack indicators
+3. Adjust rate limiting rules if necessary
+4. Implement IP whitelisting for legitimate sources
+5. Enable additional security monitoring
+
+## TROUBLESHOOTING PROCEDURES
+
+### Authentication Failures
+
+1. **Check User Account Status**
+   ```sql
+   SELECT id, username, email, account_status, locked_until, last_login
+   FROM users WHERE username = 'problem_user';
+
+   SELECT attempt_count, last_attempt, ip_address
+   FROM login_attempts WHERE username = 'problem_user'
+   ORDER BY last_attempt DESC LIMIT 10;
+   ```
+
+2. **Verify LDAP Connectivity**
+   ```bash
+   # Test LDAP connection
+   ldapsearch -H ldaps://corp-ad.company.com:636 -D "auth-service@company.com" -W -b "DC=company,DC=com" "(cn=testuser)"
+
+   # Check certificates
+   openssl s_client -connect corp-ad.company.com:636 -servername corp-ad.company.com
+   ```
+
+3. **Validate JWT Tokens**
+   ```bash
+   # Check JWT structure
+   echo "eyJhbGciOiJSUzI1NiIs..." | base64 -d | jq .
+
+   # Verify signature with public key
+   jwt verify --key=/path/to/public.key token.jwt
+   ```
+
+4. **Check Session Store**
+   ```bash
+   # Connect to Redis cluster
+   redis-cli -c -h auth-session-001.xyz.cache.amazonaws.com
+
+   # Check session exists
+   GET "session:user123:abc-def-456"
+
+   # Check cluster health
+   CLUSTER NODES
+   ```
+
+### Performance Issues
+
+1. **Database Query Analysis**
+   ```sql
+   -- Check slow queries
+   SELECT query, mean_time, calls, total_time
+   FROM pg_stat_statements
+   WHERE query LIKE '%auth%'
+   ORDER BY mean_time DESC LIMIT 10;
+
+   -- Check connection stats
+   SELECT datname, numbackends, xact_commit, xact_rollback
+   FROM pg_stat_database WHERE datname = 'auth_prod';
+   ```
+
+2. **Memory and CPU Analysis**
+   ```bash
+   # Check application metrics
+   kubectl top pods -n auth-prod
+
+   # Check JVM heap usage
+   kubectl exec -it auth-service-pod -- jstat -gc $(pgrep java)
+
+   # Check thread dumps
+   kubectl exec -it auth-service-pod -- jstack $(pgrep java)
+   ```
+
+## DEPLOYMENT INFORMATION
+
+### Deployment Pipeline
+- CI/CD: Jenkins with Blue-Green deployment
+- Container Registry: AWS ECR
+- Orchestration: Kubernetes (EKS)
+- Deployment Strategy: Blue-Green with automated rollback
+- Rollback Time: <3 minutes
+
+### Infrastructure
+- **Kubernetes Namespace**: auth-prod
+- **Replicas**: Min 5, Max 30
+- **Resource Limits**:
+  - CPU: 2000m request, 4000m limit
+  - Memory: 4Gi request, 8Gi limit
+- **Health Checks**:
+  - Readiness: /actuator/health/readiness
+  - Liveness: /actuator/health/liveness
+  - Startup: /actuator/health
+
+### Recent Changes Log
+```
+2025-01-15: Upgraded Spring Security to 6.2.1 (CVE-2024-22234)
+2025-01-12: Implemented adaptive MFA based on risk scoring
+2025-01-10: Added support for WebAuthn/FIDO2 authentication
+2025-01-08: Updated JWT key rotation to weekly schedule
+2025-01-05: Enhanced rate limiting with geographic awareness
+2025-01-03: Migrated from MD5 to bcrypt for password hashing
+```
+
+## SECURITY & COMPLIANCE
+
+### Security Standards
+- SOC 2 Type II compliant
+- ISO 27001 certified
+- OWASP Top 10 mitigation implemented
+- Regular penetration testing (quarterly)
+
+### Data Protection
+- PII encryption at rest and in transit
+- Password hashing: bcrypt with 12 rounds
+- Session encryption: AES-256-GCM
+- Audit logging: 7-year retention
+
+### Access Controls
+- Service Account: auth-service-sa
+- IAM Role: AuthServiceRole
+- KMS Key Access: auth-jwt-signing-key
+- Secret Access: auth/* in Vault
+
+## INCIDENT RESPONSE
+
+### Security Incident Types
+
+**Brute Force Attack**
+- Detection: >100 failed logins from single IP in 5 minutes
+- Response: Automatic IP blocking, security team notification
+- Escalation: CISO if >1000 IPs involved
+
+**Credential Stuffing**
+- Detection: Multiple usernames from single IP with known breached passwords
+- Response: Enhanced monitoring, affected user notifications
+- Escalation: Legal team if customer data involved
+
+**Token Theft/Replay**
+- Detection: Same token used from multiple geographic locations
+- Response: Immediate token revocation, forced re-authentication
+- Escalation: Incident commander for widespread token compromise
+
+## DISASTER RECOVERY
+
+### RTO/RPO Targets
+- RTO (Recovery Time Objective): 5 minutes
+- RPO (Recovery Point Objective): 30 seconds
+
+### Multi-Region Setup
+- Primary: us-east-1
+- Secondary: us-west-2
+- Database: Cross-region read replicas
+- Session Store: Cross-region replication
+
+### Failover Procedures
+1. DNS failover to secondary region (automated)
+2. Promote read replica to primary (automated)
+3. Redirect session store traffic (manual verification)
+4. Validate authentication flows (manual testing)
+
+## ESCALATION PROCEDURES
+
+### Severity Levels
+
+**P0 (Critical - <2 min response)**
+- Complete authentication outage
+- Security breach or active attack
+- Data exposure incident
+- Contact: auth-oncall@company.com, CISO, CTO
+
+**P1 (High - <10 min response)**
+- Partial authentication failures (>25%)
+- LDAP/AD connectivity issues
+- JWT validation problems
+- Contact: auth-oncall@company.com
+
+**P2 (Medium - <30 min response)**
+- Performance degradation
+- MFA service issues
+- Rate limiting problems
+- Contact: auth-team@company.com
+
+### Contact Information
+- **Primary On-Call**: +1-555-AUTHTEAM
+- **Secondary On-Call**: +1-555-BACKUP
+- **Security On-Call**: +1-555-SECURITY
+- **Team Lead**: David Kim (david.k@company.com)
+- **Security Architect**: Lisa Chen (lisa.c@company.com)
+- **Engineering Manager**: Roberto Silva (roberto.s@company.com)
+
+## APPENDIX
+
+### Useful Commands
+```bash
+# Check auth service status
+kubectl get pods -n auth-prod -l app=auth-service
+
+# Scale auth service
+kubectl scale deployment auth-service --replicas=15 -n auth-prod
+
+# Check authentication logs
+kubectl logs -f deployment/auth-service -n auth-prod | grep -E "(LOGIN|AUTH|ERROR)"
+
+# Force password reset for user
+kubectl exec -it auth-service-pod -- curl -X POST http://localhost:8080/admin/users/user123/reset-password
+
+# Check JWT key rotation status
+kubectl exec -it auth-service-pod -- curl http://localhost:8080/actuator/health/jwt-keys
+
+# Validate LDAP connectivity
+kubectl exec -it auth-service-pod -- curl http://localhost:8080/actuator/health/ldap
+
+# Clear user sessions
+redis-cli -c -h auth-session-001.xyz.cache.amazonaws.com DEL "session:user123:*"
+
+# Check rate limiting status
+kubectl exec -it auth-service-pod -- curl http://localhost:8080/actuator/metrics/auth.rate.limit
+```
+
+### Emergency Procedures
+```bash
+# Emergency: Disable authentication temporarily (maintenance mode)
+kubectl patch configmap auth-service-config -p '{"data":{"MAINTENANCE_MODE":"true"}}'
+kubectl rollout restart deployment auth-service -n auth-prod
+
+# Emergency: Force JWT key rotation
+kubectl exec -it auth-service-pod -- curl -X POST http://localhost:8080/admin/jwt/rotate-keys
+
+# Emergency: Clear all sessions (force re-login)
+redis-cli -c -h auth-session-001.xyz.cache.amazonaws.com FLUSHALL
+
+# Emergency: Block IP range
+kubectl exec -it auth-service-pod -- curl -X POST http://localhost:8080/admin/security/block-ip-range -d '{"cidr":"192.168.1.0/24"}'
+```
+
+### Related Documentation
+- Security Policies: https://security.company.com/policies
+- API Documentation: https://docs.company.com/auth-api
+- Runbooks: https://wiki.company.com/auth-runbooks
+- Security Incident Playbooks: https://security.company.com/playbooks
+- Compliance Documentation: https://compliance.company.com/auth
+
+---
+END OF DOCUMENT
