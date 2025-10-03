@@ -1,165 +1,103 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
-from google.cloud import storage
-from google.auth import default
-import os
 from datetime import datetime
 
-app = FastAPI(title="GCP Connectivity Test")
-
-# Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI(title="FastAPI Hello World")
 
 @app.get("/")
-async def root():
+async def hello_world():
     """Simple hello world endpoint"""
     return {
         "message": "Hello World from FastAPI!",
-        "timestamp": datetime.now().isoformat(),
-        "status": "running"
-    }
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "service": "fastapi-gcp-test",
         "timestamp": datetime.now().isoformat()
     }
 
-@app.get("/gcp/auth")
-async def check_gcp_auth():
-    """Check GCP authentication"""
-    try:
-        credentials, project = default()
-        return {
-            "status": "authenticated",
-            "project_id": project,
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Auth failed: {str(e)}")
-
-@app.get("/gcp/storage")
-async def check_gcp_storage():
-    """Test GCP Storage connectivity"""
-    try:
-        client = storage.Client()
-        buckets = list(client.list_buckets(max_results=5))
-        return {
-            "status": "connected",
-            "bucket_count": len(buckets),
-            "buckets": [b.name for b in buckets],
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Storage check failed: {str(e)}")
-
 @app.get("/ui", response_class=HTMLResponse)
 async def get_ui():
-    """Simple UI for testing endpoints"""
+    """Simple UI to display hello world"""
     html_content = """
     <!DOCTYPE html>
     <html>
     <head>
-        <title>GCP Connectivity Test</title>
+        <title>FastAPI Hello World</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
-                max-width: 800px;
-                margin: 50px auto;
-                padding: 20px;
-                background: #f5f5f5;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                margin: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             }
             .container {
                 background: white;
-                padding: 30px;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                padding: 40px;
+                border-radius: 12px;
+                box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+                text-align: center;
+                max-width: 500px;
             }
             h1 {
-                color: #4285f4;
-                margin-bottom: 30px;
+                color: #333;
+                margin-bottom: 20px;
             }
-            .test-button {
-                background: #4285f4;
+            button {
+                background: #667eea;
                 color: white;
                 border: none;
-                padding: 12px 24px;
-                border-radius: 4px;
+                padding: 15px 30px;
+                border-radius: 6px;
                 cursor: pointer;
-                margin: 10px 5px;
-                font-size: 14px;
-            }
-            .test-button:hover {
-                background: #3367d6;
-            }
-            .result {
+                font-size: 16px;
                 margin-top: 20px;
-                padding: 15px;
-                border-radius: 4px;
+            }
+            button:hover {
+                background: #5568d3;
+            }
+            #message {
+                margin-top: 30px;
+                padding: 20px;
                 background: #f8f9fa;
-                border-left: 4px solid #4285f4;
+                border-radius: 8px;
+                display: none;
             }
-            .success {
-                border-left-color: #34a853;
-                background: #e6f4ea;
+            .response {
+                font-size: 24px;
+                color: #667eea;
+                font-weight: bold;
+                margin-bottom: 10px;
             }
-            .error {
-                border-left-color: #ea4335;
-                background: #fce8e6;
-            }
-            pre {
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                font-size: 12px;
+            .timestamp {
+                font-size: 14px;
+                color: #666;
             }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>🚀 GCP Connectivity Test Dashboard</h1>
-            <div>
-                <button class="test-button" onclick="testEndpoint('/')">Test Hello World</button>
-                <button class="test-button" onclick="testEndpoint('/health')">Test Health</button>
-                <button class="test-button" onclick="testEndpoint('/gcp/auth')">Test GCP Auth</button>
-                <button class="test-button" onclick="testEndpoint('/gcp/storage')">Test GCP Storage</button>
-            </div>
-            <div id="result"></div>
+            <h1>🚀 FastAPI on GCP</h1>
+            <p>Click the button to fetch Hello World from the API</p>
+            <button onclick="fetchHelloWorld()">Get Hello World</button>
+            <div id="message"></div>
         </div>
 
         <script>
-            async function testEndpoint(endpoint) {
-                const resultDiv = document.getElementById('result');
-                resultDiv.innerHTML = '<div class="result">Testing...</div>';
+            async function fetchHelloWorld() {
+                const messageDiv = document.getElementById('message');
+                messageDiv.style.display = 'block';
+                messageDiv.innerHTML = '<p>Loading...</p>';
                 
                 try {
-                    const response = await fetch(endpoint);
+                    const response = await fetch('/');
                     const data = await response.json();
                     
-                    const className = response.ok ? 'result success' : 'result error';
-                    resultDiv.innerHTML = `
-                        <div class="${className}">
-                            <strong>Endpoint:</strong> ${endpoint}<br>
-                            <strong>Status:</strong> ${response.status}<br>
-                            <strong>Response:</strong>
-                            <pre>${JSON.stringify(data, null, 2)}</pre>
-                        </div>
+                    messageDiv.innerHTML = `
+                        <div class="response">${data.message}</div>
+                        <div class="timestamp">Timestamp: ${data.timestamp}</div>
                     `;
                 } catch (error) {
-                    resultDiv.innerHTML = `
-                        <div class="result error">
-                            <strong>Error:</strong> ${error.message}
-                        </div>
-                    `;
+                    messageDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
                 }
             }
         </script>
